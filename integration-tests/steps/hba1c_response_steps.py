@@ -1,7 +1,10 @@
 from assertpy import assert_that, soft_assertions
 from behave import then
 from behave.runner import Context
-from clients.bg_readings_api_client import retrieve_patient_summaries
+from clients.bg_readings_api_client import (
+    BG_READINGS_API_HOST,
+    retrieve_patient_summaries,
+)
 from clients.hba1c_readings_api_client import get_hba1c_reading_by_uuid
 
 
@@ -18,7 +21,7 @@ def assert_reading_data_stored(context: Context) -> None:
 
     if context.response.status_code == 201:
         response = context.requests.get(
-            url=context.response.headers["Location"],
+            url=f"{BG_READINGS_API_HOST}/{context.response.headers['Location']}",
             timeout=15,
         )
     else:

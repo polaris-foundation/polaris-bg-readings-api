@@ -2,6 +2,7 @@ from datetime import datetime
 
 from behave import given, use_step_matcher, when
 from behave.runner import Context
+from clients.bg_readings_api_client import BG_READINGS_API_HOST
 from clients.hba1c_readings_api_client import (
     delete_hba1c_reading,
     patch_hba1c_reading,
@@ -71,7 +72,7 @@ def hba1c_reading_exists(context: Context) -> None:
 def update_hba1c_reading_step(context: Context) -> None:
 
     response = context.requests.get(
-        url=context.response.headers["Location"],
+        url=f"{BG_READINGS_API_HOST}/{context.response.headers['Location']}",
         timeout=15,
     )
     response.raise_for_status()
@@ -95,7 +96,7 @@ def update_hba1c_reading_step(context: Context) -> None:
 def delete_hba1c_reading_step(context: Context) -> None:
 
     response = context.requests.get(
-        url=context.response.headers["Location"],
+        url=f"{BG_READINGS_API_HOST}/{context.response.headers['Location']}",
         timeout=15,
     )
     response.raise_for_status()
