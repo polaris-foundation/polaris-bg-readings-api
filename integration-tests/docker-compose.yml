@@ -1,0 +1,123 @@
+x-environment:
+  &COMMON_ENVIRONMENT
+  ENVIRONMENT: DEVELOPMENT
+  ALLOW_DROP_DATA: "true"
+  PROXY_URL: http://localhost
+  HS_ISSUER: http://localhost/
+  HS_KEY: secret
+  REDIS_HOST: localhost
+  REDIS_PORT: 6379
+  REDIS_PASSWORD: doesntmatter
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_USERNAME: guest
+  RABBITMQ_PASSWORD: guest
+  LOG_LEVEL: INFO
+  LOG_FORMAT: COLOUR
+  DHOS_TRUSTOMER_API_HOST: http://wiremock:8080/dhos-trustomer
+  CUSTOMER_CODE: inttests
+  POLARIS_API_KEY: inttestsecret
+  MOCK_TRUSTOMER_CONFIG: |
+    {
+      "gdm_config": {
+        "alerts_system": "percentages",
+        "blood_glucose_units": "mmol/L",
+        "blood_glucose_thresholds_mmoll": {
+          "BEFORE-BREAKFAST": {"high": 5.3, "low": 4.0},
+          "OTHER": {"high": 7.8, "low": 4.0},
+          "BEFORE-LUNCH": {"high": 6.0, "low": 4.0},
+          "BEFORE-DINNER": {"high": 6.0, "low": 4.0}
+        },
+        "graph_thresholds_mmoll": {"high": 7.8, "low": 4.0},
+        "use_syne_predictions": false,
+        "article_tags": ["gdm-uk-default"],
+        "medication_tags": ["gdm-uk-default"]
+      }
+    }
+
+services:
+  gdm-bg-readings-api-integration-tests:
+    container_name: "gdm-bg-readings-api-integration-tests"
+    build:
+      context: .
+    environment:
+      <<: *COMMON_ENVIRONMENT
+      GDM_BG_READINGS_API_HOST: "http://gdm-bg-readings-api:5000"
+      BEHAVE_ARGS: ${BEHAVE_ARGS:-}
+      REPORT_PORTAL_URL: ${REPORT_PORTAL_URL:-}
+      REPORT_PORTAL_TOKEN: ${REPORT_PORTAL_TOKEN:-}
+      REPORT_PORTAL_PROJECT: ${REPORT_PORTAL_PROJECT:-}
+      ENVIRONMENT: ${ENVIRONMENT:-}
+      RELEASE: ${RELEASE:-}
+      SYSTEM_JWT_SCOPE: >-
+        read:gdm_bg_reading_all read:gdm_bg_reading write:gdm_bg_reading
+        write:gdm_alert read:gdm_rule write:gdm_alert
+    command: >
+      bash -c "behave --no-capture --no-logcapture ${BEHAVE_ARGS:-}"
+    depends_on:
+      "gdm-bg-readings-api":
+        condition: service_healthy
+
+  gdm-bg-readings-api:
+    container_name: "gdm-bg-readings-api"
+    build:
+      context: ../
+      args:
+        - GEMFURY_DOWNLOAD_KEY
+    environment:
+      <<: *COMMON_ENVIRONMENT
+      AUTH0_AUDIENCE: http://localhost/
+      DATABASE_HOST: gdm-bg-readings-api-db
+      DATABASE_PORT: 5432
+      DATABASE_USER: gdm-bg-readings-api
+      DATABASE_PASSWORD: gdm-bg-readings-api
+      DATABASE_NAME: gdm-bg-readings-api
+      SERVER_TIMEZONE: Europe/London
+    command: bash -c "flask db upgrade && python -m gdm_bg_readings_api"
+
+    healthcheck:
+      test: curl -f http://localhost:5000/running || false
+      interval: 3s
+      retries: 40
+      start_period: 10s
+    depends_on:
+      "gdm-bg-readings-api-db":
+        condition: service_healthy
+      "rabbitmq":
+        condition: service_healthy
+      "wiremock":
+        condition: service_healthy
+
+  gdm-bg-readings-api-db:
+    container_name: "gdm-bg-readings-api-db"
+    image: docker.io/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+    environment:
+      <<: *COMMON_ENVIRONMENT
+      POSTGRES_USER: gdm-bg-readings-api
+      POSTGRES_PASSWORD: gdm-bg-readings-api
+
+  rabbitmq:
+    container_name: "rabbitmq"
+    image: docker.io/rabbitmq:3.8-management-alpine
+    healthcheck:
+      test: rabbitmq-diagnostics -q check_running && rabbitmq-diagnostics -q check_local_alarms
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    ports:
+      - "15672"
+
+  wiremock:
+    container_name: "wiremock"
+    image: rodolpheche/wiremock:2.27.2
+    healthcheck:
+      test: "curl --location --request POST 'http://localhost:8080/__admin/mappings' || false"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

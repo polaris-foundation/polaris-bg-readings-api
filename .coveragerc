@@ -1,0 +1,16 @@
+[paths]
+source =
+    gdm_bg_readings_api/*
+
+[report]
+omit =
+  **/__main__.py
+  gdm_bg_readings_api/app.py
+  gdm_bg_readings_api/autoapp.py
+  gdm_bg_readings_api/blueprint_development/*
+  gdm_bg_readings_api/blueprint_api/publish.py
+
+fail_under = 90
+
+show_missing = true
+skip_covered = true

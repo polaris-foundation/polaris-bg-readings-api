@@ -1,0 +1,2042 @@
+openapi: 3.0.3
+info:
+  description: The GDM BG Readings API is responsible for storing and retrieving blood
+    glucose readings.
+  title: GDM BG Readings API
+  version: 1.1.0
+paths:
+  /running:
+    get:
+      summary: Verify service is running
+      description: Verifies that the service is running. Used for monitoring in kubernetes.
+      tags:
+      - monitoring
+      responses:
+        '200':
+          description: If we respond, we are running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  running:
+                    type: boolean
+                    example: true
+      operationId: flask_batteries_included.blueprint_monitoring.app_running
+  /version:
+    get:
+      summary: Get version information
+      description: Get the version number, circleci build number, and git hash.
+      tags:
+      - monitoring
+      responses:
+        '200':
+          description: Version numbers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  circle:
+                    type: string
+                    example: '1234'
+                  hash:
+                    type: string
+                    example: 366c204
+      operationId: flask_batteries_included.blueprint_monitoring.app_version
+  /gdm/v1/patient/{patient_id}/reading:
+    post:
+      summary: Create new reading
+      description: Create a new reading for a given patient using the details provided
+        in the request body.
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        description: Patient UUID
+        required: true
+        schema:
+          type: string
+          example: cdda06c0-ccc4-4da0-b0b7-a8f1b20ede10
+      - name: compact
+        in: query
+        required: false
+        description: Whether readings in the response should be in compact form
+        schema:
+          type: boolean
+          default: false
+      requestBody:
+        description: Reading details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReadingRequest'
+              x-body-name: reading_data
+      responses:
+        '200':
+          description: New reading
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/ReadingResponse'
+                - $ref: '#/components/schemas/ReadingResponseCompact'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.post_reading_v1
+      security:
+      - bearerAuth: []
+    get:
+      summary: Get patient readings
+      description: Get all readings for the patient with the provided UUID
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      responses:
+        '200':
+          description: List of readings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.get_readings
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}:
+    get:
+      summary: Get patient details by UUID
+      description: Get the details of the patient with the provided UUID. Note that
+        this is not the full patient information, which can be found in the Services
+        API.
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        description: UUID
+        schema:
+          type: string
+          example: 9eac08b3-e1ad-4f81-929d-ec1590c51181
+        required: true
+      responses:
+        '200':
+          description: Patient details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.get_patient_by_uuid
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/reading/{reading_id}:
+    get:
+      summary: Get reading by UUID
+      description: Get a patient's reading by UUID
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      - name: reading_id
+        in: path
+        required: true
+        description: Reading UUID
+        schema:
+          type: string
+          example: 5d8250bb-1d1d-4aa5-86ed-38a5af1015a4
+      responses:
+        '200':
+          description: Requested reading
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.get_reading_by_uuid
+      security:
+      - bearerAuth: []
+    patch:
+      summary: Update reading
+      description: Update the reading with the provided UUID using the details in
+        the request body.
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      - name: reading_id
+        in: path
+        required: true
+        description: Reading UUID
+        schema:
+          type: string
+          example: 5d8250bb-1d1d-4aa5-86ed-38a5af1015a4
+      requestBody:
+        description: Reading update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReadingUpdateRequest'
+      responses:
+        '200':
+          description: Updated reading
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.patch_reading
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/reading/filter/{prandial_tag}:
+    get:
+      summary: Get filtered patient readings
+      description: Get readings for the patient with the provided UUID, filtered by
+        prandial tag
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      - name: prandial_tag
+        in: path
+        required: true
+        description: An integer representing the prandial tag
+        schema:
+          type: integer
+          enum:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          example: 2
+      responses:
+        '200':
+          description: List of readings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.get_readings_with_filter
+      security:
+      - bearerAuth: []
+  /gdm/v1/reading/recent:
+    get:
+      summary: Get recent readings
+      description: Get recent readings for each patient for the specified number of
+        previous days
+      tags:
+      - reading
+      parameters:
+      - name: days
+        in: query
+        required: false
+        description: Last number of days for which to retrieve readings
+        schema:
+          type: integer
+          default: 7
+      - name: compact
+        in: query
+        required: false
+        description: Whether readings in the response should be in compact form
+        schema:
+          type: boolean
+          default: true
+      responses:
+        '200':
+          description: Map of patient UUID to recent readings
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/ReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.retrieve_readings_for_period
+      security:
+      - bearerAuth: []
+  /gdm/v1/reading/statistics:
+    get:
+      summary: Get reading statistics
+      description: Get per-patient reading statistics for the specified number of
+        days. This includes minimum and maximum reading values, the total number of
+        readings, and the number of readings banded as normal.
+      tags:
+      - reading
+      parameters:
+      - name: days
+        in: query
+        required: false
+        description: Last number of days for which to retrieve statistics
+        schema:
+          type: integer
+          default: 7
+      - name: compact
+        in: query
+        required: false
+        description: Whether readings in the response should be in compact form
+        schema:
+          type: boolean
+          default: true
+      responses:
+        '200':
+          description: Map of patient UUID to reading statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/ReadingStatistics'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.retrieve_statistics_for_period
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/reading/latest:
+    get:
+      summary: Get latest reading for patient
+      description: Get the latest reading for the patient with the provided UUID
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      responses:
+        '200':
+          description: Most recent reading
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.get_latest_reading
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/reading/earliest:
+    get:
+      summary: Get earliest reading for patient
+      description: Get the earliest reading for the patient with the provided UUID
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      responses:
+        '200':
+          description: Earliest reading
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.get_first_reading
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/summary:
+    post:
+      summary: Retrieve patient summaries
+      description: Retrieves a summary of patient and latest reading details for the
+        patients with the UUIDs provided in the request body.
+      tags:
+      - reading
+      requestBody:
+        description: List of patient UUIDs
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              x-body-name: patient_ids
+              items:
+                type: string
+              example:
+              - d461f6c1-f642-465e-8e5c-1058db58ec5b
+      responses:
+        '200':
+          description: Map of patient UUID to summary
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/PatientSummaryResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.retrieve_patient_summaries
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/reading/{reading_id}/dose:
+    post:
+      summary: Add dose to reading
+      description: Add the dose with the details provided in the request body to the
+        reading specified by UUID.
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      - name: reading_id
+        in: path
+        required: true
+        description: Reading UUID
+        schema:
+          type: string
+          example: 5d8250bb-1d1d-4aa5-86ed-38a5af1015a4
+      requestBody:
+        description: Dose details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoseRequest'
+      responses:
+        '200':
+          description: New dose
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoseResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.post_dose_to_reading
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/reading/{reading_id}/dose/{dose_id}:
+    patch:
+      summary: Update dose for reading
+      description: Update the dose with the specified UUID using the details provided
+        in the request body.
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      - name: reading_id
+        in: path
+        required: true
+        description: Reading UUID
+        schema:
+          type: string
+          example: 5d8250bb-1d1d-4aa5-86ed-38a5af1015a4
+      - name: dose_id
+        in: path
+        required: true
+        description: Dose UUID
+        schema:
+          type: string
+          example: e30ce361-39ab-483c-a5ac-246cacf871d6
+      requestBody:
+        description: Dose update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoseRequest'
+      responses:
+        '200':
+          description: Updated dose
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoseResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.patch_dose_on_reading
+      security:
+      - bearerAuth: []
+  /gdm/v1/clear_alerts/patient/{patient_id}:
+    post:
+      summary: Clear patient alerts
+      description: Clear alerts (both "counts" and "percentages" alerts) for the patient
+        with the provided UUID.
+      tags:
+      - alert
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      responses:
+        '200':
+          description: Alerts cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  completed:
+                    type: boolean
+                    description: Whether the alerts were cleared successfully
+                    example: true
+                  suppress_reading_alerts_from:
+                    type: string
+                    description: ISO8601 timestamp from when alerts were suppressed
+                    example: 2020-01-01 00:00:00+00:00
+                  suppress_reading_alerts_until:
+                    type: string
+                    description: ISO8601 timestamp until when alerts were suppressed
+                    example: 2020-01-08 00:00:00+00:00
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.clear_alerts_for_patient
+      security:
+      - bearerAuth: []
+  /gdm/v1/process_alerts/reading/{reading_id}:
+    post:
+      summary: Process reading counts alerts
+      description: Process the "counts" alerts for the reading with the specified
+        UUID.
+      tags:
+      - alert
+      parameters:
+      - name: reading_id
+        in: path
+        required: true
+        description: Reading UUID
+        schema:
+          type: string
+          example: 5d8250bb-1d1d-4aa5-86ed-38a5af1015a4
+      responses:
+        '200':
+          description: Alerts processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.add_counts_alerts_to_reading
+      security:
+      - bearerAuth: []
+  /gdm/v1/process_activity_alerts/patient/{patient_id}:
+    post:
+      summary: Process patient activity alerts
+      description: Process the "activity" alerts for the patient with the specified
+        UUID, using the readings plans in the request body to determine the expected
+        number of readings.
+      tags:
+      - alert
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      requestBody:
+        description: List of readings plans
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReadingsPlansRequest'
+              x-body-name: readings_plans_request
+      responses:
+        '200':
+          description: Alerts processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.process_activity_alert_for_patient
+      security:
+      - bearerAuth: []
+  /gdm/v1/process_alerts:
+    post:
+      summary: Process percentages alerts
+      description: Process the "percentages" alerts for the group of patients specified
+        in the request body.
+      tags:
+      - alert
+      requestBody:
+        description: Map of patient UUID to alert details
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              x-body-name: alerts_map
+              additionalProperties:
+                type: object
+                properties:
+                  red_alert:
+                    type: boolean
+                    description: Whether the patient should have a red alert
+                    example: true
+                  amber_alert:
+                    type: boolean
+                    description: Whether the patient should have an ambere alert
+                    example: false
+                required:
+                - red_alert
+                - amber_alert
+      responses:
+        '204':
+          description: Alerts processed
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.process_percentages_alerts
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/hba1c:
+    post:
+      summary: Create new Hba1c reading
+      description: Create a new Hba1c reading for a given patient using the details
+        provided in the request body.
+      tags:
+      - hba1c
+      parameters:
+      - name: patient_id
+        in: path
+        description: Patient UUID
+        required: true
+        schema:
+          type: string
+          example: cdda06c0-ccc4-4da0-b0b7-a8f1b20ede10
+      requestBody:
+        description: Hba1c reading details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hba1cReadingRequest'
+              x-body-name: reading_data
+      responses:
+        '201':
+          description: New Hba1c reading
+          headers:
+            Location:
+              description: The location of the created Hba1c reading
+              schema:
+                type: string
+                example: http://server/gdm/v1/patient/bb747396-3b5a-4891-9547-496984ab1a95/hba1c/1f441bf6-81e4-4d85-9f85-d967a6f363c3
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.post_hba1c_reading
+      security:
+      - bearerAuth: []
+    get:
+      summary: Get patient Hba1c readings
+      description: Get all Hba1c readings for the patient with the provided UUID
+      tags:
+      - hba1c
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      responses:
+        '200':
+          description: List of Hba1c readings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hba1cReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.get_hba1c_readings
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/hba1c/{hba1c_reading_id}:
+    get:
+      summary: Get Hba1c reading by UUID
+      description: Get a patient's Hba1c reading by UUID
+      tags:
+      - hba1c
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      - name: hba1c_reading_id
+        in: path
+        required: true
+        description: Hba1c reading UUID
+        schema:
+          type: string
+          example: 5d8250bb-1d1d-4aa5-86ed-38a5af1015a4
+      responses:
+        '200':
+          description: Requested Hba1c reading
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hba1cReadingResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.get_hba1c_reading_by_uuid
+      security:
+      - bearerAuth: []
+    patch:
+      summary: Update Hba1c reading
+      description: Update the Hba1c reading to the field values provided in the request
+        body for a given patient and reading identified by the UUIDs in the request
+        path
+      tags:
+      - hba1c
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 18439f36-ffa9-42ae-90de-0beda299cd37
+      - name: hba1c_reading_id
+        in: path
+        required: true
+        description: Hba1c reading UUID
+        schema:
+          type: string
+          example: 15439f36-ffa9-42ae-90de-0beda299cd38
+      requestBody:
+        description: JSON body containing the Hba1c reading
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hba1cReadingPatchRequest'
+              x-body-name: reading_data
+      responses:
+        '204':
+          description: Hba1c reading updated
+        default:
+          description: Error, e.g. 400 Bad Request, 404 Not Found, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.patch_hba1c_reading
+      security:
+      - bearerAuth: []
+    delete:
+      summary: Delete Hba1c reading
+      description: Delete a Hba1c reading by UUID
+      tags:
+      - hba1c
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 18439f36-ffa9-42ae-90de-0beda299cd37
+      - name: hba1c_reading_id
+        in: path
+        required: true
+        description: Hba1c reading UUID
+        schema:
+          type: string
+          example: 15439f36-ffa9-42ae-90de-0beda299cd38
+      responses:
+        '204':
+          description: Hba1c reading deleted
+        default:
+          description: Error, e.g. 400 Bad Request, 404 Not Found, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.delete_hba1c_reading
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/hba1c_target:
+    post:
+      summary: Create new Hba1c target
+      description: Create a new Hba1c target for a given patient using the details
+        provided in the request body.
+      tags:
+      - hba1c-target
+      parameters:
+      - name: patient_id
+        in: path
+        description: Patient UUID
+        required: true
+        schema:
+          type: string
+          example: cdda06c0-ccc4-4da0-b0b7-a8f1b20ede10
+      requestBody:
+        description: Hba1c target details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hba1cTargetRequest'
+              x-body-name: hba1c_target_details
+      responses:
+        '201':
+          description: New Hba1c target
+          headers:
+            Location:
+              description: The location of the created Hba1c target
+              schema:
+                type: string
+                example: http://server/gdm/v1/patient/bb747396-3b5a-4891-9547-496984ab1a95/hba1c_target/76b2c0cc-991b-4ac2-94df-7bfbd888bf1f
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.post_hba1c_target
+      security:
+      - bearerAuth: []
+    get:
+      summary: Get patient Hba1c targets
+      description: Get all Hba1c targets for the patient with the provided UUID
+      tags:
+      - hba1c-target
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 3c0cb994-f5f6-4910-b654-0d23f4b5e6c8
+      responses:
+        '200':
+          description: List of Hba1c targets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hba1cTargetResponse'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.get_hba1c_targets
+      security:
+      - bearerAuth: []
+  /gdm/v1/patient/{patient_id}/hba1c_target/{hba1c_target_id}:
+    patch:
+      summary: Update Hba1c target
+      description: Update the Hba1c target to the field values provided in the request
+        body for a given patient and target identified by the UUIDs in the request
+        path
+      tags:
+      - hba1c-target
+      parameters:
+      - name: patient_id
+        in: path
+        required: true
+        description: Patient UUID
+        schema:
+          type: string
+          example: 18439f36-ffa9-42ae-90de-0beda299cd37
+      - name: hba1c_target_id
+        in: path
+        required: true
+        description: Hba1c target UUID
+        schema:
+          type: string
+          example: 76b2c0cc-991b-4ac2-94df-7bfbd888bf1f
+      requestBody:
+        description: JSON body containing the Hba1c target
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hba1cTargetUpdate'
+              x-body-name: hba1c_target_details
+      responses:
+        '204':
+          description: Hba1c target updated
+        default:
+          description: Error, e.g. 400 Bad Request, 404 Not Found, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.patch_hba1c_target
+      security:
+      - bearerAuth: []
+  /gdm/v2/patient/{patient_id}/reading:
+    post:
+      summary: Create new reading
+      description: Create a new reading for a given patient using the details provided
+        in the request body.
+      tags:
+      - reading
+      parameters:
+      - name: patient_id
+        in: path
+        description: Patient UUID
+        required: true
+        schema:
+          type: string
+          example: cdda06c0-ccc4-4da0-b0b7-a8f1b20ede10
+      - name: compact
+        in: query
+        required: false
+        description: Whether readings in the response should be in compact form
+        schema:
+          type: boolean
+          default: false
+      requestBody:
+        description: Reading details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReadingRequest'
+              x-body-name: reading_data
+      responses:
+        '200':
+          description: New reading
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/ReadingResponse'
+                - $ref: '#/components/schemas/ReadingResponseCompact'
+        '409':
+          description: Duplicate reading
+          headers:
+            Location:
+              description: URL of the original reading
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Error, e.g. 400 Bad Request, 503 Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: gdm_bg_readings_api.blueprint_api.post_reading
+      security:
+      - bearerAuth: []
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: HTTP response code
+          example: 404
+        message:
+          type: string
+          description: Message attached to response
+          example: Not Found
+      required:
+      - code
+      description: An error response in json format
+    PrandialTagRequest:
+      nullable: true
+      type: object
+      properties:
+        value:
+          type: integer
+          description: Integer representation of prandial tag
+          enum:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          example: 2
+        uuid:
+          type: string
+          description: String representation of prandial tag
+          enum:
+          - PRANDIAL-TAG-NONE
+          - PRANDIAL-TAG-BEFORE-BREAKFAST
+          - PRANDIAL-TAG-AFTER-BREAKFAST
+          - PRANDIAL-TAG-BEFORE-LUNCH
+          - PRANDIAL-TAG-AFTER-LUNCH
+          - PRANDIAL-TAG-BEFORE-DINNER
+          - PRANDIAL-TAG-AFTER-DINNER
+          - PRANDIAL-TAG-OTHER
+          example: PRANDIAL-TAG-BEFORE-BREAKFAST
+    DoseRequest:
+      type: object
+      properties:
+        medication_id:
+          type: string
+          description: Medication UUID
+          example: 9a72d4bc-761a-460c-958c-9133bd38c854
+        amount:
+          type: number
+          description: Amount of medication
+          example: 1.5
+      required:
+      - amount
+      - medication_id
+      description: Dose request
+    DoseResponse:
+      type: object
+      properties:
+        medication_id:
+          type: string
+          description: Medication UUID
+          example: 9a72d4bc-761a-460c-958c-9133bd38c854
+        amount:
+          type: number
+          description: Amount of medication
+          example: 1.5
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+      required:
+      - amount
+      - medication_id
+      - uuid
+      description: Dose response
+    ReadingMetadataRequest:
+      type: object
+      properties:
+        control:
+          type: boolean
+          description: Whether or not the reading was taken using control solution
+          example: false
+        manual:
+          type: boolean
+          description: Whether or not the reading was taken manually
+          example: false
+        meter_serial_number:
+          type: string
+          nullable: true
+          description: Serial number of the blood glucose meter with which the reading
+            was taken
+          example: D8H7HSYIF7DE
+        meter_model:
+          type: string
+          nullable: true
+          description: Model of the blood glucose meter with which the reading was
+            taken
+          example: Jazz Wireless
+        manufacturer:
+          type: string
+          nullable: true
+          description: Manufacturer of the blood glucose meter with which the reading
+            was taken
+          example: AgaMatrix
+        reading_is_correct:
+          type: boolean
+          nullable: true
+          description: If the reading on the meter matches the reading in the app
+            as validated by the patient
+          example: true
+        transmitted_reading:
+          type: number
+          nullable: true
+          description: Blood glucose value that was transmitted directly from the
+            blood glucose meter to the app
+          example: 5.6
+      required:
+      - control
+      - manual
+    ReadingRequest:
+      type: object
+      properties:
+        measured_timestamp:
+          type: string
+          description: ISO8601 timestamp at which reading was taken
+          example: '2020-01-01T00:00:00.000Z'
+        blood_glucose_value:
+          type: number
+          description: Blood glucose reading value
+          example: 5.5
+        units:
+          type: string
+          description: Blood glucose reading units
+          enum: &id001
+          - mmol/L
+          - mg/dL
+          example: mmol/L
+        comment:
+          type: string
+          nullable: true
+          description: Comment associated with reading
+          example: I ate earlier than usual today!
+        prandial_tag:
+          nullable: true
+          description: Prandial tag (meal label) for the reading
+          allOf:
+          - $ref: '#/components/schemas/PrandialTagRequest'
+        doses:
+          type: array
+          nullable: true
+          description: Medication doses associated with the reading
+          items:
+            $ref: '#/components/schemas/DoseRequest'
+        reading_metadata:
+          nullable: true
+          description: Metadata associated with the reading
+          allOf:
+          - $ref: '#/components/schemas/ReadingMetadataRequest'
+        banding_id:
+          type: string
+          description: ID of the reading banding
+          enum:
+          - BG-READING-BANDING-LOW
+          - BG-READING-BANDING-NORMAL
+          - BG-READING-BANDING-HIGH
+          example: BG-READING-BANDING-NORMAL
+      required:
+      - banding_id
+      - blood_glucose_value
+      - measured_timestamp
+      - units
+      description: Reading request
+    ReadingMetadataResponse:
+      type: object
+      properties:
+        control:
+          type: boolean
+          description: Whether or not the reading was taken using control solution
+          example: false
+        manual:
+          type: boolean
+          description: Whether or not the reading was taken manually
+          example: false
+        meter_serial_number:
+          type: string
+          nullable: true
+          description: Serial number of the blood glucose meter with which the reading
+            was taken
+          example: D8H7HSYIF7DE
+        meter_model:
+          type: string
+          nullable: true
+          description: Model of the blood glucose meter with which the reading was
+            taken
+          example: Jazz Wireless
+        manufacturer:
+          type: string
+          nullable: true
+          description: Manufacturer of the blood glucose meter with which the reading
+            was taken
+          example: AgaMatrix
+        reading_is_correct:
+          type: boolean
+          nullable: true
+          description: If the reading on the meter matches the reading in the app
+            as validated by the patient
+          example: true
+        transmitted_reading:
+          type: number
+          nullable: true
+          description: Blood glucose value that was transmitted directly from the
+            blood glucose meter to the app
+          example: 5.6
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+      required:
+      - control
+      - manual
+      - uuid
+    ReadingResponseCompact:
+      type: object
+      properties:
+        measured_timestamp:
+          type: string
+          description: ISO8601 timestamp at which reading was taken
+          example: '2020-01-01T00:00:00.000Z'
+        blood_glucose_value:
+          type: number
+          description: Blood glucose reading value
+          example: 5.5
+        units:
+          type: string
+          description: Blood glucose reading units
+          enum: *id001
+          example: mmol/L
+        comment:
+          type: string
+          nullable: true
+          description: Comment associated with reading
+          example: I ate earlier than usual today!
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+        patient_id:
+          type: string
+          description: Patient UUID
+          example: bfd1de2d-2a8d-464a-99bc-7c3fe8f881bc
+        snoozed:
+          type: string
+          description: Whether or not the alert(s) resulting from this reading have
+            been snoozed
+          example: true
+        prandial_tag:
+          type: string
+          description: Prandial tag (meal label) id for the reading
+          example: bfd1de2d-2a8d-464a-99bc-7c3fe8f881bc
+        reading_metadata:
+          description: Metadata associated with the reading
+          allOf:
+          - $ref: '#/components/schemas/ReadingMetadataResponse'
+        reading_banding:
+          type: string
+          description: Banding (severity) id of the reading
+          example: bfd1de2d-2a8d-464a-99bc-7c3fe8f881bc
+        red_alert:
+          type: string
+          description: A red alert id associated with the reading
+          example: bfd1de2d-2a8d-464a-99bc-7c3fe8f881bc
+        amber_alert:
+          type: string
+          description: An amber alert associated with the reading
+          example: bfd1de2d-2a8d-464a-99bc-7c3fe8f881bc
+      required:
+      - blood_glucose_value
+      - measured_timestamp
+      - patient_id
+      - units
+      - uuid
+      description: Reading response (compact)
+    PrandialTagResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+        value:
+          type: integer
+          description: Integer representation of prandial tag
+          enum:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          example: 2
+        description:
+          type: string
+          description: Description of prandial tag
+          example: Before breakfast
+      required:
+      - description
+      - uuid
+      - value
+    ReadingBanding:
+      type: object
+      properties:
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+        value:
+          type: integer
+          description: Integer representation of banding
+          example: 3
+        description:
+          type: string
+          description: Description of banding
+          example: high
+      required:
+      - description
+      - uuid
+      - value
+    Alert:
+      type: object
+      properties:
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+        dismissed:
+          type: boolean
+          description: Whether or not the alert has been dismissed
+          example: false
+      required:
+      - dismissed
+      - uuid
+    ReadingResponse:
+      type: object
+      properties:
+        measured_timestamp:
+          type: string
+          description: ISO8601 timestamp at which reading was taken
+          example: '2020-01-01T00:00:00.000Z'
+        blood_glucose_value:
+          type: number
+          description: Blood glucose reading value
+          example: 5.5
+        units:
+          type: string
+          description: Blood glucose reading units
+          enum: *id001
+          example: mmol/L
+        comment:
+          type: string
+          nullable: true
+          description: Comment associated with reading
+          example: I ate earlier than usual today!
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+        patient_id:
+          type: string
+          description: Patient UUID
+          example: bfd1de2d-2a8d-464a-99bc-7c3fe8f881bc
+        snoozed:
+          type: string
+          description: Whether or not the alert(s) resulting from this reading have
+            been snoozed
+          example: true
+        doses:
+          type: array
+          description: Medication doses associated with the reading
+          items:
+            $ref: '#/components/schemas/DoseResponse'
+        prandial_tag:
+          description: Prandial tag (meal label) for the reading
+          allOf:
+          - $ref: '#/components/schemas/PrandialTagResponse'
+        reading_metadata:
+          description: Metadata associated with the reading
+          allOf:
+          - $ref: '#/components/schemas/ReadingMetadataResponse'
+        reading_banding:
+          description: Banding (severity) of the reading
+          allOf:
+          - $ref: '#/components/schemas/ReadingBanding'
+        red_alert:
+          description: A red alert associated with the reading
+          allOf:
+          - $ref: '#/components/schemas/Alert'
+        amber_alert:
+          description: An amber alert associated with the reading
+          allOf:
+          - $ref: '#/components/schemas/Alert'
+      required:
+      - blood_glucose_value
+      - measured_timestamp
+      - patient_id
+      - units
+      - uuid
+      description: Reading response
+    ReadingUpdateRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+          nullable: true
+          description: Comment associated with reading
+          example: I ate earlier than usual today!
+        prandial_tag:
+          nullable: true
+          description: Prandial tag (meal label) for the reading
+          allOf:
+          - $ref: '#/components/schemas/PrandialTagRequest'
+        doses:
+          type: array
+          nullable: true
+          description: Medication doses associated with the reading
+          items:
+            $ref: '#/components/schemas/DoseRequest'
+      description: Reading update request
+    Hba1cReadingCommonFields:
+      type: object
+      properties:
+        measured_timestamp:
+          type: string
+          format: date-time
+          description: ISO8601 timestamp at which reading was taken
+          example: '2020-01-01T00:00:00.000Z'
+        value:
+          type: number
+          description: Hba1c reading value
+          example: 40.0
+        units:
+          type: string
+          description: Hba1c reading units
+          enum: &id002
+          - mmol/mol
+          example: mmol/mol
+      required:
+      - measured_timestamp
+      - units
+      - value
+      description: Hba1c reading request
+    Hba1cReadingPatchRequest:
+      type: object
+      properties:
+        measured_timestamp:
+          type: string
+          format: date-time
+          description: ISO8601 timestamp at which reading was taken
+          example: '2020-01-01T00:00:00.000Z'
+        value:
+          type: number
+          description: Hba1c reading value
+          example: 40.0
+        units:
+          type: string
+          description: Hba1c reading units
+          enum:
+          - mmol/mol
+          example: mmol/mol
+      description: Hba1c reading request
+    Hba1cReadingRequest:
+      type: object
+      properties:
+        measured_timestamp:
+          type: string
+          format: date-time
+          description: ISO8601 timestamp at which reading was taken
+          example: '2020-01-01T00:00:00.000Z'
+        value:
+          type: number
+          description: Hba1c reading value
+          example: 40.0
+        units:
+          type: string
+          description: Hba1c reading units
+          enum: *id002
+          example: mmol/mol
+      required:
+      - measured_timestamp
+      - units
+      - value
+      description: Hba1c reading request
+    Hba1cReadingResponse:
+      type: object
+      properties:
+        measured_timestamp:
+          type: string
+          format: date-time
+          description: ISO8601 timestamp at which reading was taken
+          example: '2020-01-01T00:00:00.000Z'
+        value:
+          type: number
+          description: Hba1c reading value
+          example: 40.0
+        units:
+          type: string
+          description: Hba1c reading units
+          enum: *id002
+          example: mmol/mol
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+        patient_id:
+          type: string
+          description: Patient UUID
+          example: bfd1de2d-2a8d-464a-99bc-7c3fe8f881bc
+      required:
+      - measured_timestamp
+      - patient_id
+      - units
+      - uuid
+      - value
+      description: Hba1c reading response
+    Hba1cTargetRequest:
+      type: object
+      properties:
+        value:
+          type: number
+          description: Hba1c target value
+          example: 40.0
+        units:
+          type: string
+          description: Hba1c target units
+          enum: &id003
+          - mmol/mol
+          example: mmol/mol
+        target_timestamp:
+          type: string
+          format: date-time
+          description: ISO8601 timestamp at which hba1c target was set
+          example: '2020-01-01T00:00:00.000Z'
+      required:
+      - target_timestamp
+      - units
+      - value
+      description: Hba1c target request
+    Hba1cTargetUpdate:
+      type: object
+      properties:
+        value:
+          type: number
+          description: Hba1c target value
+          example: 40.0
+        units:
+          type: string
+          description: Hba1c target units
+          enum:
+          - mmol/mol
+          example: mmol/mol
+        target_timestamp:
+          type: string
+          format: date-time
+          description: ISO8601 timestamp at which hba1c target was set
+          example: '2020-01-01T00:00:00.000Z'
+      description: Hba1c target update request
+    Hba1cTargetResponse:
+      type: object
+      properties:
+        value:
+          type: number
+          description: Hba1c target value
+          example: 40.0
+        units:
+          type: string
+          description: Hba1c target units
+          enum: *id003
+          example: mmol/mol
+        target_timestamp:
+          type: string
+          format: date-time
+          description: ISO8601 timestamp at which hba1c target was set
+          example: '2020-01-01T00:00:00.000Z'
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+        patient_id:
+          type: string
+          description: Patient UUID
+          example: bfd1de2d-2a8d-464a-99bc-7c3fe8f881bc
+      required:
+      - patient_id
+      - target_timestamp
+      - units
+      - uuid
+      - value
+      description: Hba1c target response
+    PatientResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+        suppress_reading_alerts_from:
+          type: string
+          nullable: true
+          description: ISO8601 timestamp from when alerts were suppressed
+          example: '2020-01-01T00:00:00.000Z'
+        suppress_reading_alerts_until:
+          type: string
+          nullable: true
+          description: ISO8601 timestamp until when alerts were suppressed
+          example: '2020-01-08T00:00:00.000Z'
+        current_red_alert:
+          type: boolean
+          description: Whether or not the patient has an active red alert
+          example: true
+        current_amber_alert:
+          type: boolean
+          description: Whether or not the patient has an active amber alert
+          example: true
+        current_activity_alert:
+          type: boolean
+          description: Whether or not the patient has an active activity alert
+          example: true
+        alert_now:
+          type: boolean
+          description: Whether an alert has just been generated
+          example: true
+      required:
+      - current_activity_alert
+      - current_amber_alert
+      - current_red_alert
+      - suppress_reading_alerts_from
+      - suppress_reading_alerts_until
+      - uuid
+      description: Patient response
+    PatientSummaryResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+          description: Universally unique identifier for object
+          example: 2c4f1d24-2952-4d4e-b1d1-3637e33cc161
+        created:
+          type: string
+          description: When the object was created
+          example: '2017-09-23T08:29:19.123+00:00'
+        created_by:
+          type: string
+          description: UUID of the user that created the object
+          example: d26570d8-a2c9-4906-9c6a-ea1a98b8b80f
+        modified:
+          type: string
+          description: When the object was modified
+          example: '2017-09-23T08:29:19.123+00:00'
+        modified_by:
+          type: string
+          description: UUID of the user that modified the object
+          example: 2a0e26e5-21b6-463a-92e8-06d7290067d0
+        suppress_reading_alerts_from:
+          type: string
+          nullable: true
+          description: ISO8601 timestamp from when alerts were suppressed
+          example: '2020-01-01T00:00:00.000Z'
+        suppress_reading_alerts_until:
+          type: string
+          nullable: true
+          description: ISO8601 timestamp until when alerts were suppressed
+          example: '2020-01-08T00:00:00.000Z'
+        current_red_alert:
+          type: boolean
+          description: Whether or not the patient has an active red alert
+          example: true
+        current_amber_alert:
+          type: boolean
+          description: Whether or not the patient has an active amber alert
+          example: true
+        current_activity_alert:
+          type: boolean
+          description: Whether or not the patient has an active activity alert
+          example: true
+        alert_now:
+          type: boolean
+          description: Whether an alert has just been generated
+          example: true
+        latest_reading:
+          description: Latest reading
+          allOf:
+          - $ref: '#/components/schemas/ReadingResponse'
+      required:
+      - current_activity_alert
+      - current_amber_alert
+      - current_red_alert
+      - latest_reading
+      - suppress_reading_alerts_from
+      - suppress_reading_alerts_until
+      - uuid
+      description: Patient summary response
+    PrandialTagUpdateRequest:
+      type: object
+      properties:
+        prandial_tag:
+          description: Prandial tag (meal label) for the reading
+          allOf:
+          - $ref: '#/components/schemas/PrandialTagRequest'
+        banding_id:
+          type: string
+          description: ID of the reading banding
+          enum:
+          - BG-READING-BANDING-LOW
+          - BG-READING-BANDING-NORMAL
+          - BG-READING-BANDING-HIGH
+          example: BG-READING-BANDING-NORMAL
+      required:
+      - prandial_tag
+      description: Prandial tag update request
+    ReadingsPlan:
+      type: object
+      properties:
+        created:
+          type: string
+          description: ISO8601 datetime of plan creation
+        readings_per_day:
+          type: integer
+          description: Number of readings to take per day
+          example: 4
+        days_per_week_to_take_readings:
+          type: integer
+          description: Number of days per week to take readings
+          example: 7
+      required:
+      - created
+      - days_per_week_to_take_readings
+      - readings_per_day
+    ReadingsPlansRequest:
+      type: object
+      properties:
+        readings_plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReadingsPlan'
+      required:
+      - readings_plans
+      description: Readings plans request
+    ReadingStatistics:
+      type: object
+      properties:
+        min_reading:
+          description: Minimum blood glucose reading
+          allOf:
+          - $ref: '#/components/schemas/ReadingResponse'
+        max_reading:
+          description: Maximum blood glucose reading
+          allOf:
+          - $ref: '#/components/schemas/ReadingResponse'
+        readings_count:
+          type: integer
+          description: Total number of readings
+        readings_count_banding_normal:
+          type: integer
+          description: Total number of readings banded as normal
+      required:
+      - max_reading
+      - min_reading
+      - readings_count
+      - readings_count_banding_normal
+      description: Reading statistics
+  responses:
+    BadRequest:
+      description: Bad or malformed request was received
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServiceUnavailable:
+      description: Service or dependent resource not available
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

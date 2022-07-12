@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "she-gdm-bg-readings-api"
+version = "0.0.1"
+description = "GDM BG Readings API"
+authors = ["adam.romano@sensynehealth.com"]
+keywords = ["Swagger", "Readings", "Blood", "Glucose"]
+repository = "https://github.com/draysontechnologies/gdm-bg-readings-api"
+
+[[tool.poetry.source]]
+name = "sensynehealth"
+url = "https://pypi.fury.io/sensynehealth/"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+cachetools = "5.*"
+flask-batteries-included = {version = "3.*", extras = ["pgsql", "apispec"]}
+kombu-batteries-included = "1.*"
+pytz = "2020.1.*"
+she-logging = "1.*"
+
+[tool.poetry.dev-dependencies]
+bandit = "*"
+black = "*"
+coloredlogs = "*"
+coverage = "*"
+isort = "*"
+mock = "*"
+mypy = "*"
+pytest = "*"
+pytest-dhos = {version = "*", extras=["fbi"]}
+pytest-flask = "*"
+pytest-freezegun = "*"
+pytest-mock = "*"
+requests_mock = "*"
+safety = "*"
+tox = "*"
+types-cachetools = "*"
+types-mock = "*"
+types-pytz = "*"
+types-PyYAML = "*"
+types-requests = "*"

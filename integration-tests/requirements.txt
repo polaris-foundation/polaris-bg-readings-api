@@ -1,0 +1,11 @@
+assertpy
+behave
+black
+environs
+isort
+kombu==5.*
+mypy
+python-jose==3.*
+reportportal-behave-client==1.*
+requests
+types-requests
