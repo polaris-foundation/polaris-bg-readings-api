@@ -134,9 +134,9 @@ class Reading(ModelIdentifier, db.Model):
 
         resp = {**resp, **compacted_fields_resp}
 
-        if self.red_alert:
+        if self.red_alert_id:
             resp["red_alert"] = self.red_alert_id
-        if self.amber_alert:
+        if self.amber_alert_id:
             resp["amber_alert"] = self.amber_alert_id
 
         return resp

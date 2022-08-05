@@ -1142,3 +1142,29 @@ class TestController:
             "prandial_tag": {"uuid": "PRANDIAL-TAG-BEFORE-BREAKFAST", "value": 1},
             "units": "mmol/L",
         }
+
+    def test_retrieve_readings_performance(
+        self, reading_dict_in_abnormal: Dict, statement_counter: Callable
+    ) -> None:
+        patient_1 = generate_uuid()
+        base_time = datetime.now(tz=timezone.utc)
+
+        for i in range(5000):
+            measured_time = (base_time - timedelta(minutes=1 * i)).isoformat(
+                timespec="milliseconds"
+            )
+            controller.create_reading(
+                patient_id=patient_1,
+                reading_data={
+                    **reading_dict_in_abnormal,
+                    "measured_timestamp": measured_time,
+                },
+            )
+
+        with statement_counter(limit=1):
+            results = controller.retrieve_readings_for_period(days=10, compact=True)
+        assert len(results[patient_1]) == 5000
+
+        with statement_counter(limit=1):
+            results = controller.retrieve_readings_for_period(days=10, compact=False)
+        assert len(results[patient_1]) == 5000

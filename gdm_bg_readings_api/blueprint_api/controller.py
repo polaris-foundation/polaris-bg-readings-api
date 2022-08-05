@@ -215,7 +215,7 @@ def retrieve_readings_for_period(
     Retrieves all readings for a given period of days from the database. Returns a map of
     patient UUID to list of readings.
     """
-    readings: List[Reading] = _get_recent_readings(days=days)
+    readings: List[Reading] = _get_recent_readings(days=days, compact=compact)
     patient_readings_map: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for reading in readings:
         patient_readings_map[reading.patient_id].append(
@@ -224,7 +224,7 @@ def retrieve_readings_for_period(
     return dict(patient_readings_map)
 
 
-def _get_recent_readings(days: int) -> List[Reading]:
+def _get_recent_readings(days: int, compact: bool = True) -> List[Reading]:
     """
     Ideally we would just query the readings table, filtering using the earliest allowed
     measured timestamp. However, the database splits the timestamp into raw and timezone
@@ -237,14 +237,23 @@ def _get_recent_readings(days: int) -> List[Reading]:
     """
     earliest_allowed: datetime = datetime.now(tz=timezone.utc) - timedelta(days=days)
     earliest_selected: datetime = earliest_allowed - timedelta(days=1)
-    readings: List[Reading] = (
-        Reading.query.options(
+
+    if compact:
+        readings_query = Reading.query.options(
+            joinedload(Reading.reading_metadata),
+        )
+    else:
+        readings_query = Reading.query.options(
+            joinedload(Reading.reading_metadata),
             joinedload(Reading.doses),
             joinedload(Reading.reading_banding),
+            joinedload(Reading.prandial_tag),
             joinedload(Reading.amber_alert),
             joinedload(Reading.red_alert),
         )
-        .filter(Reading.measured_timestamp > earliest_selected)
+
+    readings: List[Reading] = (
+        readings_query.filter(Reading.measured_timestamp > earliest_selected)
         .order_by(Reading.measured_timestamp.desc())
         .all()
     )
