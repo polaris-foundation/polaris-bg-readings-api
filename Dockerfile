@@ -1,5 +1,6 @@
-FROM python:3.8.3-slim
-# FIXME: this image is pinned due to https://github.com/python/cpython/pull/21473 introduced in 3.8.4
+FROM python:3.9
+
+LABEL org.opencontainers.image.source=https://github.com/polaris-foundation/polaris-users-api
 
 ARG GEMFURY_DOWNLOAD_KEY
 ENV FLASK_APP gdm_bg_readings_api/autoapp.py

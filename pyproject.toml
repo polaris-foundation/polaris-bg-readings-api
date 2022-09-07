@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "she-gdm-bg-readings-api"
+name = "gdm-bg-readings-api"
 version = "0.0.1"
 description = "GDM BG Readings API"
-authors = ["adam.romano@sensynehealth.com"]
+authors = ["Adam Romano <adam.romano@sensynehealth.com>"]
 keywords = ["Swagger", "Readings", "Blood", "Glucose"]
 repository = "https://github.com/draysontechnologies/gdm-bg-readings-api"
 
@@ -11,7 +11,7 @@ name = "sensynehealth"
 url = "https://pypi.fury.io/sensynehealth/"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 cachetools = "5.*"
 flask-batteries-included = {version = "3.*", extras = ["pgsql", "apispec"]}
 kombu-batteries-included = "1.*"
@@ -32,6 +32,7 @@ pytest-flask = "*"
 pytest-freezegun = "*"
 pytest-mock = "*"
 requests_mock = "*"
+sadisplay = "*"
 safety = "*"
 tox = "*"
 types-cachetools = "*"
@@ -39,3 +40,30 @@ types-mock = "*"
 types-pytz = "*"
 types-PyYAML = "*"
 types-requests = "*"
+types-waitress = "*"
+
+[tool.mypy]
+namespace_packages=true
+ignore_missing_imports=false
+disallow_untyped_defs=true
+
+[[tool.mypy.overrides]]
+module = [
+    "apispec.*",
+    "apispec_webframeworks.*",
+    "connexion",
+    "dhosredis",
+    "jose.*",
+    "sadisplay",
+    "sqlalchemy.*",
+    "flask_sqlalchemy"
+]
+ignore_missing_imports = true
+
+[tool.isort]
+profile = "black"
+known_third_party = ["_pytest", "alembic", "apispec", "apispec_webframeworks", "assertpy", "behave", "cachetools", "click", "clients", "connexion", "environs", "flask", "flask_batteries_included", "flask_sqlalchemy", "freezegun", "helpers", "jose", "kombu", "kombu_batteries_included", "marshmallow", "mock", "pytest", "pytest_mock", "pytz", "reporting", "reportportal_behave", "requests", "requests_mock", "sadisplay", "she_logging", "sqlalchemy", "waitress", "yaml"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]

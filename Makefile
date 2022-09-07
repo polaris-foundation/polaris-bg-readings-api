@@ -12,7 +12,7 @@ gitroot = ${shell git rev-parse --show-toplevel}
 repo = ${notdir ${gitroot}}
 PROJECT_NAME ?= ${repo}
 project = ${dir ${shell git ls-files --full-name ${firstword ${MAKEFILE_LIST}}}}
-python_version = 3.8.5
+python_version = 3.9.5
 ignore_packages ?= migrations/
 packages = ${filter-out ${ignore_packages},${dir ${wildcard */__init__.py}}}
 
@@ -68,7 +68,7 @@ ${gitroot}/.git/hooks/pre-commit: .pre-commit-config.yaml
 install: ${gitroot}/.git/hooks/pre-commit
 endif
 
-TOX_TARGETS=$(shell tox -a)
+TOX_TARGETS=$(shell tox -a | grep -vE '^(using tox|could not|provision)')
 ${TOX_TARGETS}: install
 	tox -e $@
 

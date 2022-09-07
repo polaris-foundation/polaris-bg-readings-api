@@ -1,13 +1,11 @@
-FROM python:3.8-slim
+FROM python:3.9-slim
 
 WORKDIR /app
-
-RUN apt-get update -y && apt-get upgrade -y
+ARG PIP_EXTRA_INDEX_URL
 
 # Install dependencies
 ADD requirements.txt .
-RUN apt-get update \
-    && pip install -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Add the app
 ADD . .
