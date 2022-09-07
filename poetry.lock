@@ -56,9 +56,9 @@ python-versions = ">=3.6"
 apispec = {version = ">=2.0.0", extras = ["yaml"]}
 
 [package.extras]
-dev = ["pytest", "mock", "Flask (==1.1.1)", "tornado", "bottle (==0.12.17)", "flake8 (==3.7.9)", "flake8-bugbear (==19.8.0)", "pre-commit (>=1.18,<2.0)", "tox"]
-lint = ["flake8 (==3.7.9)", "flake8-bugbear (==19.8.0)", "pre-commit (>=1.18,<2.0)"]
-tests = ["pytest", "mock", "Flask (==1.1.1)", "tornado", "bottle (==0.12.17)"]
+tests = ["bottle (==0.12.17)", "tornado", "Flask (==1.1.1)", "mock", "pytest"]
+lint = ["pre-commit (>=1.18,<2.0)", "flake8-bugbear (==19.8.0)", "flake8 (==3.7.9)"]
+dev = ["tox", "pre-commit (>=1.18,<2.0)", "flake8-bugbear (==19.8.0)", "flake8 (==3.7.9)", "bottle (==0.12.17)", "tornado", "Flask (==1.1.1)", "mock", "pytest"]
 
 [[package]]
 name = "attrs"
@@ -743,8 +743,8 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
-dev = ["pre-commit", "tox"]
-testing = ["pytest", "pytest-benchmark"]
+testing = ["pytest-benchmark", "pytest"]
+dev = ["tox", "pre-commit"]
 
 [[package]]
 name = "prometheus-client"
@@ -862,7 +862,7 @@ pytest = ">=5.2"
 Werkzeug = ">=0.7"
 
 [package.extras]
-docs = ["sphinx", "sphinx-rtd-theme"]
+docs = ["sphinx-rtd-theme", "sphinx"]
 
 [[package]]
 name = "pytest-freezegun"
