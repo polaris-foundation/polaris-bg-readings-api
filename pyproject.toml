@@ -6,10 +6,6 @@ authors = ["Adam Romano <adam.romano@sensynehealth.com>"]
 keywords = ["Swagger", "Readings", "Blood", "Glucose"]
 repository = "https://github.com/draysontechnologies/gdm-bg-readings-api"
 
-[[tool.poetry.source]]
-name = "sensynehealth"
-url = "https://pypi.fury.io/sensynehealth/"
-
 [tool.poetry.dependencies]
 python = "^3.9"
 cachetools = "5.*"

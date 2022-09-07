@@ -61,8 +61,6 @@ services:
     container_name: "gdm-bg-readings-api"
     build:
       context: ../
-      args:
-        - GEMFURY_DOWNLOAD_KEY
     environment:
       <<: *COMMON_ENVIRONMENT
       AUTH0_AUDIENCE: http://localhost/
