@@ -14,13 +14,13 @@ jobs:
           command: pip install --upgrade tox
       - restore_cache:
           keys:
-            - v1-poetry-deps-{{ checksum "poetry.lock" }}
-            - v1-poetry-deps-
+            - v2-poetry-deps-{{ checksum "poetry.lock" }}
+            - v2-poetry-deps-
       - run:
           name: Run tox tests
           command: tox -e py39
       - save_cache:
-          key: v1-poetry-deps-{{ checksum "poetry.lock" }}
+          key: v2-poetry-deps-{{ checksum "poetry.lock" }}
           paths:
             - .tox
   integration-test:
