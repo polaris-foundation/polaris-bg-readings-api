@@ -78,7 +78,7 @@ services:
       retries: 40
       start_period: 10s
     depends_on:
-      "gdm-bg-readings-api-db":
+      "postgres-db":
         condition: service_healthy
       "rabbitmq":
         condition: service_healthy
