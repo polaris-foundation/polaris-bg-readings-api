@@ -3,7 +3,7 @@
 gitroot = ${shell git rev-parse --show-toplevel}
 repo = ${notdir ${gitroot}}
 PROJECT_NAME ?= ${repo}
-python_version = 3.8.5
+python_version = 3.9.5
 VIRTUAL_ENV=${shell pyenv root}/versions/${python_version}/envs/${PROJECT_NAME}-integration-tests
 
 TEST_CONTAINER = ${PROJECT_NAME}-integration-tests

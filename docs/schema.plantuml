@@ -1,0 +1,206 @@
+@startuml
+
+skinparam defaultFontName Courier
+
+Class AmberAlert {
+    VARCHAR[36] ★ uuid        
+    DATETIME    ⚪ created     
+    VARCHAR     ⚪ created_by_ 
+    BOOLEAN     ⚪ dismissed   
+    DATETIME    ⚪ modified    
+    VARCHAR     ⚪ modified_by_
+    +           reading       
+    to_dict()                 
+}
+
+Class Dose {
+    VARCHAR[36] ★ uuid         
+    VARCHAR     ☆ reading_id   
+    FLOAT       ⚪ amount       
+    DATETIME    ⚪ created      
+    VARCHAR     ⚪ created_by_  
+    VARCHAR     ⚪ medication_id
+    DATETIME    ⚪ modified     
+    VARCHAR     ⚪ modified_by_ 
+    +           reading        
+    to_dict()                  
+    INDEX[uuid] » dose_uuid    
+}
+
+Class Hba1cReading {
+    VARCHAR[36]               ★ uuid                               
+    VARCHAR[36]               ☆ patient_id                         
+    DATETIME                  ⚪ created                            
+    VARCHAR                   ⚪ created_by_                        
+    DATETIME                  ⚪ deleted                            
+    DATETIME                  ⚪ measured_timestamp                 
+    DATETIME                  ⚪ modified                           
+    VARCHAR                   ⚪ modified_by_                       
+    VARCHAR                   ⚪ units                              
+    FLOAT                     ⚪ value                              
+    delete()                                                       
+    set_property()                                                 
+    to_dict()                                                      
+    INDEX[uuid]               » hba1c_reading_uuid                 
+    INDEX[measured_timestamp] » ix_hba1c_reading_measured_timestamp
+    INDEX[patient_id]         » ix_hba1c_reading_patient_id        
+}
+
+Class Hba1cTarget {
+    VARCHAR[36]       ★ uuid                      
+    VARCHAR[36]       ☆ patient_id                
+    DATETIME          ⚪ created                   
+    VARCHAR           ⚪ created_by_               
+    DATETIME          ⚪ modified                  
+    VARCHAR           ⚪ modified_by_              
+    DATETIME          ⚪ target_timestamp          
+    VARCHAR           ⚪ units                     
+    FLOAT             ⚪ value                     
+    to_dict()                                     
+    INDEX[patient_id] » ix_hba1c_target_patient_id
+}
+
+Class Patient {
+    VARCHAR[36]                         ★ uuid                            
+    DATETIME                            ⚪ created                         
+    VARCHAR                             ⚪ created_by_                     
+    BOOLEAN                             ⚪ current_activity_alert          
+    BOOLEAN                             ⚪ current_amber_alert             
+    BOOLEAN                             ⚪ current_red_alert               
+    DATETIME                            ⚪ modified                        
+    VARCHAR                             ⚪ modified_by_                    
+    DATETIME                            ⚪ suppress_reading_alerts_from    
+    INTEGER                             ⚪ suppress_reading_alerts_from_tz 
+    DATETIME                            ⚪ suppress_reading_alerts_until   
+    INTEGER                             ⚪ suppress_reading_alerts_until_tz
+    +                                   readings                          
+    get_suppress_reading_alerts_from()                                    
+    get_suppress_reading_alerts_until()                                   
+    set_suppress_reading_alerts_from()                                    
+    set_suppress_reading_alerts_until()                                   
+    to_dict()                                                             
+}
+
+Class PatientAlert {
+    VARCHAR[36] ★ uuid        
+    VARCHAR[36] ☆ patient_id  
+    VARCHAR[17] ⚪ alert_type  
+    DATETIME    ⚪ created     
+    VARCHAR     ⚪ created_by_ 
+    DATETIME    ⚪ dismissed_at
+    DATETIME    ⚪ ended_at    
+    DATETIME    ⚪ modified    
+    VARCHAR     ⚪ modified_by_
+    DATETIME    ⚪ started_at  
+    to_dict()                 
+}
+
+Class PrandialTag {
+    VARCHAR[36] ★ uuid             
+    DATETIME    ⚪ created          
+    VARCHAR     ⚪ created_by_      
+    VARCHAR     ⚪ description      
+    DATETIME    ⚪ modified         
+    VARCHAR     ⚪ modified_by_     
+    INTEGER     ⚪ value            
+    +           reading            
+    to_dict()                      
+    INDEX[uuid] » prandial_tag_uuid
+}
+
+Class Reading {
+    VARCHAR[36]                                                                      ★ uuid                         
+    VARCHAR[36]                                                                      ☆ amber_alert_id               
+    VARCHAR[36]                                                                      ☆ patient_id                   
+    VARCHAR[36]                                                                      ☆ prandial_tag_id              
+    VARCHAR[36]                                                                      ☆ reading_banding_id           
+    VARCHAR[36]                                                                      ☆ reading_metadata_id          
+    VARCHAR[36]                                                                      ☆ red_alert_id                 
+    FLOAT                                                                            ⚪ blood_glucose_value          
+    VARCHAR                                                                          ⚪ comment                      
+    DATETIME                                                                         ⚪ created                      
+    VARCHAR                                                                          ⚪ created_by_                  
+    DATETIME                                                                         ⚪ measured_timestamp           
+    INTEGER                                                                          ⚪ measured_timezone            
+    DATETIME                                                                         ⚪ modified                     
+    VARCHAR                                                                          ⚪ modified_by_                 
+    BOOLEAN                                                                          ⚪ snoozed                      
+    VARCHAR                                                                          ⚪ units                        
+    +                                                                                amber_alert                    
+    +                                                                                doses                          
+    +                                                                                patient                        
+    +                                                                                prandial_tag                   
+    +                                                                                reading_banding                
+    +                                                                                reading_metadata               
+    +                                                                                red_alert                      
+    get_measured_timestamp()                                                                                        
+    to_dict()                                                                                                       
+    INDEX[measured_timestamp]                                                        » ix_reading_measured_timestamp
+    INDEX[patient_id]                                                                » ix_reading_patient_id        
+    INDEX[blood_glucose_value,units,measured_timestamp,measured_timezone,patient_id] » reading_unique_idx           
+    INDEX[uuid]                                                                      » reading_uuid                 
+}
+
+Class ReadingBanding {
+    VARCHAR[36] ★ uuid        
+    DATETIME    ⚪ created     
+    VARCHAR     ⚪ created_by_ 
+    VARCHAR[20] ⚪ description 
+    DATETIME    ⚪ modified    
+    VARCHAR     ⚪ modified_by_
+    INTEGER     ⚪ value       
+    to_dict()                 
+}
+
+Class ReadingMetadata {
+    VARCHAR[36] ★ uuid                 
+    BOOLEAN     ⚪ control              
+    DATETIME    ⚪ created              
+    VARCHAR     ⚪ created_by_          
+    BOOLEAN     ⚪ manual               
+    VARCHAR     ⚪ manufacturer         
+    VARCHAR     ⚪ meter_model          
+    VARCHAR     ⚪ meter_serial_number  
+    DATETIME    ⚪ modified             
+    VARCHAR     ⚪ modified_by_         
+    BOOLEAN     ⚪ reading_is_correct   
+    FLOAT       ⚪ transmitted_reading  
+    +           reading                
+    to_dict()                          
+    INDEX[uuid] » reading_metadata_uuid
+}
+
+Class RedAlert {
+    VARCHAR[36] ★ uuid        
+    DATETIME    ⚪ created     
+    VARCHAR     ⚪ created_by_ 
+    BOOLEAN     ⚪ dismissed   
+    DATETIME    ⚪ modified    
+    VARCHAR     ⚪ modified_by_
+    +           reading       
+    to_dict()                 
+}
+
+Dose <--o Reading: reading_id
+
+Hba1cReading <--o Patient: patient_id
+
+Hba1cTarget <--o Patient: patient_id
+
+PatientAlert <--o Patient: patient_id
+
+Reading <--o Patient: patient_id
+
+Reading <--o RedAlert: red_alert_id
+
+Reading <--o AmberAlert: amber_alert_id
+
+Reading <--o PrandialTag: prandial_tag_id
+
+Reading <--o ReadingMetadata: reading_metadata_id
+
+Reading <--o ReadingBanding: reading_banding_id
+
+right footer generated by sadisplay v0.4.9
+
+@enduml
