@@ -1,6 +1,6 @@
 FROM python:3.9
 
-LABEL org.opencontainers.image.source=https://github.com/polaris-foundation/polaris-users-api
+LABEL org.opencontainers.image.source=https://github.com/polaris-foundation/polaris-bg-readings-api
 
 ENV FLASK_APP gdm_bg_readings_api/autoapp.py
 
