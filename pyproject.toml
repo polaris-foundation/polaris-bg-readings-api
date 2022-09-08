@@ -4,7 +4,7 @@ version = "0.0.1"
 description = "GDM BG Readings API"
 authors = ["Adam Romano <adam.romano@sensynehealth.com>"]
 keywords = ["Swagger", "Readings", "Blood", "Glucose"]
-repository = "https://github.com/draysontechnologies/gdm-bg-readings-api"
+repository = "https://github.com/polaris-foundation/polaris-bg-readings-api"
 
 [tool.poetry.dependencies]
 python = "^3.9"
